@@ -53,3 +53,8 @@ sh:
 .PHONY: pnpm
 pnpm:
 	$(DC) exec $(SERVICE) $(PNPM) $(filter-out $@,$(MAKECMDGOALS))
+
+sync:
+	@echo "🔄 Syncing node_modules from container..."
+	docker compose cp react-todo:/app/node_modules ./
+	@echo "✅ Synced!"
