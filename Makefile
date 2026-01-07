@@ -57,4 +57,5 @@ pnpm:
 sync:
 	@echo "🔄 Syncing node_modules from container..."
 	docker compose cp react-todo:/app/node_modules ./
+	docker compose cp react-todo:/app/.pnpm-store ./
 	@echo "✅ Synced!"

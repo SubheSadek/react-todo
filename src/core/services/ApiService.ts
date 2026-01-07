@@ -6,12 +6,13 @@ import type {
     Method,
 } from "axios";
 import { destroyToken, getToken } from "./AuthTokenService";
+import { errorMsg } from "./Message";
 
 /* ---------------------------------------------------
    Axios Instance
 --------------------------------------------------- */
 const axiosClient: AxiosInstance = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL,
+    baseURL: import.meta.env.VITE_API_URL,
     timeout: 10000,
 });
 
@@ -39,20 +40,36 @@ axiosClient.interceptors.request.use(
 --------------------------------------------------- */
 axiosClient.interceptors.response.use(
     (response: AxiosResponse) => {
-        // Always return response data only
         return response.data;
     },
     (error) => {
-        const status = error.response?.status;
+        const response = error.response;
 
-        if (status === 401) {
+        if (!response) {
+            errorMsg('Something went wrong');
+            return Promise.reject(error);
+        }
+
+        if (response.status === 401) {
             destroyToken();
+            errorMsg('Unauthorized');
             window.location.href = "/sign-in";
+        }
+
+        if ([400, 404, 422].includes(response.status)) {
+            setError(response);
         }
 
         return Promise.reject(error);
     }
 );
+
+const setError = (response: AxiosResponse): void => {
+    const errors = response.data.messages || { error: [response.data.message] };
+    for (const key in errors) {
+        errorMsg(errors[key][0]);
+    }
+};
 
 /* ---------------------------------------------------
    Generic Request Types
@@ -68,7 +85,7 @@ export interface RequestOptions<D = any> {
 /* ---------------------------------------------------
    Generic Request Executor
 --------------------------------------------------- */
-export const request = <R = any, D = any>(
+export const callApi = <R = any, D = any>(
     options: RequestOptions<D>
 ): Promise<R> => {
     const config: AxiosRequestConfig = {
